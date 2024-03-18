@@ -1,1 +1,2 @@
-# MSPR-Appli-Commande
+# MSPR-Application Commande
+Application Commande / API REST
