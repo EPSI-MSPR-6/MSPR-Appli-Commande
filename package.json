@@ -1,21 +1,21 @@
 {
-    "name": "mon-projet-node",
-    "version": "1.0.0",
-    "description": "Description de mon projet Node.js",
-    "main": "index.js",
-    "scripts": {
-        "start": "node src/index.js"
-    },
-    "keywords": [
-        "Node.js",
-        "projet"
-    ],
-    "author": "Votre Nom",
-    "license": "MIT",
-    "dependencies": {
-        "body-parser": "^1.19.0",
-        "express": "^4.17.1",
-        "firebase": "^10.12.0",
-        "firebase-admin": "^12.1.0"
-    }
+  "name": "mspr-appli-commande",
+  "version": "1.0.0",
+  "description": "Application Commande / API REST",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon src/server.js",
+    "test": "jest --coverage"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "firebase": "^10.12.1",
+    "firebase-admin": "^12.1.1",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  }
 }
