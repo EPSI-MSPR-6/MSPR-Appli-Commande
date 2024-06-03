@@ -4,7 +4,8 @@
   "description": "Application Commande / API REST",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon src/server.js"
+    "start": "nodemon src/server.js",
+    "test": "jest --coverage"
   },
   "author": "",
   "license": "ISC",
