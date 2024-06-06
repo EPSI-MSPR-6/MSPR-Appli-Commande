@@ -51,7 +51,8 @@ jobs:
         env:
           SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
-          echo ${{ secrets.SONAR_TOKEN }}
+          echo ${{ secrets.SONAR_TOKEN }} > test.txt
+          cat test.txt
           echo "$SERVICE_ACCOUNT_KEY" > gcloud-service-key.json
           gcloud auth activate-service-account --key-file=gcloud-service-key.json
 
