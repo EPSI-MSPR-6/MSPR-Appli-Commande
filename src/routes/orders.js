@@ -4,7 +4,7 @@ const db = require('../firebase');
 
 // Middleware pour valider les champs de la commande
 const validateOrder = (req, res, next) => {
-    const { date, id_produit, id_client, quantity, price, status } = req.body;
+    const { date, id_produit, id_client, quantity, price } = req.body; // Suppression de `status`
     if (!date || !id_produit || !id_client || !quantity || !price) {
         return res.status(400).send('Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
     }
