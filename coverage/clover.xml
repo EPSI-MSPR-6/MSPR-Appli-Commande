@@ -1,23 +1,92 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1717666279787" clover="3.2.0">
-  <project timestamp="1717666279787" name="All files">
-    <metrics statements="14" coveredstatements="12" conditionals="2" coveredconditionals="2" methods="4" coveredmethods="3" elements="20" coveredelements="17" complexity="0" loc="14" ncloc="14" packages="1" files="1" classes="1"/>
-    <file name="firebaseTestEnv.js" path="/Users/mouhamadouabdoulkane/Desktop/M1_EPSI/MSPR_4/MSPR-Appli-Commande/tests/firebaseTestEnv.js">
-      <metrics statements="14" coveredstatements="12" conditionals="2" coveredconditionals="2" methods="4" coveredmethods="3"/>
-      <line num="1" count="1" type="stmt"/>
-      <line num="4" count="3" type="cond" truecount="2" falsecount="0"/>
-      <line num="5" count="2" type="stmt"/>
-      <line num="14" count="1" type="stmt"/>
-      <line num="15" count="1" type="stmt"/>
-      <line num="16" count="1" type="stmt"/>
-      <line num="17" count="0" type="stmt"/>
-      <line num="18" count="0" type="stmt"/>
-      <line num="23" count="1" type="stmt"/>
-      <line num="24" count="1" type="stmt"/>
-      <line num="25" count="1" type="stmt"/>
-      <line num="26" count="1" type="stmt"/>
-      <line num="27" count="1" type="stmt"/>
-      <line num="31" count="1" type="stmt"/>
-    </file>
+<coverage generated="1717862424628" clover="3.2.0">
+  <project timestamp="1717862424629" name="All files">
+    <metrics statements="68" coveredstatements="68" conditionals="24" coveredconditionals="24" methods="11" coveredmethods="11" elements="103" coveredelements="103" complexity="0" loc="68" ncloc="68" packages="3" files="3" classes="3"/>
+    <package name="src">
+      <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+      <file name="firebase.js" path="C:\Users\avand\OneDrive\Bureau\API_Commandes\MSPR-Appli-Commande\src\firebase.js">
+        <metrics statements="4" coveredstatements="4" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="3" count="2" type="stmt"/>
+        <line num="11" count="2" type="stmt"/>
+        <line num="12" count="2" type="stmt"/>
+      </file>
+    </package>
+    <package name="src.routes">
+      <metrics statements="50" coveredstatements="50" conditionals="22" coveredconditionals="22" methods="7" coveredmethods="7"/>
+      <file name="orders.js" path="C:\Users\avand\OneDrive\Bureau\API_Commandes\MSPR-Appli-Commande\src\routes\orders.js">
+        <metrics statements="50" coveredstatements="50" conditionals="22" coveredconditionals="22" methods="7" coveredmethods="7"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="6" count="1" type="stmt"/>
+        <line num="7" count="4" type="stmt"/>
+        <line num="8" count="4" type="cond" truecount="7" falsecount="0"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="11" count="3" type="cond" truecount="7" falsecount="0"/>
+        <line num="12" count="1" type="stmt"/>
+        <line num="14" count="2" type="stmt"/>
+        <line num="15" count="2" type="stmt"/>
+        <line num="19" count="1" type="stmt"/>
+        <line num="20" count="2" type="stmt"/>
+        <line num="21" count="2" type="stmt"/>
+        <line num="22" count="1" type="stmt"/>
+        <line num="23" count="1" type="stmt"/>
+        <line num="25" count="1" type="stmt"/>
+        <line num="30" count="1" type="stmt"/>
+        <line num="31" count="3" type="stmt"/>
+        <line num="32" count="3" type="stmt"/>
+        <line num="33" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="34" count="1" type="stmt"/>
+        <line num="36" count="1" type="stmt"/>
+        <line num="39" count="1" type="stmt"/>
+        <line num="44" count="1" type="stmt"/>
+        <line num="45" count="2" type="stmt"/>
+        <line num="46" count="2" type="stmt"/>
+        <line num="47" count="2" type="stmt"/>
+        <line num="48" count="1" type="stmt"/>
+        <line num="50" count="1" type="stmt"/>
+        <line num="55" count="1" type="stmt"/>
+        <line num="56" count="4" type="stmt"/>
+        <line num="57" count="4" type="stmt"/>
+        <line num="58" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="59" count="1" type="stmt"/>
+        <line num="61" count="3" type="stmt"/>
+        <line num="62" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="63" count="1" type="stmt"/>
+        <line num="65" count="1" type="stmt"/>
+        <line num="66" count="1" type="stmt"/>
+        <line num="69" count="1" type="stmt"/>
+        <line num="74" count="1" type="stmt"/>
+        <line num="75" count="3" type="stmt"/>
+        <line num="76" count="3" type="stmt"/>
+        <line num="77" count="2" type="cond" truecount="2" falsecount="0"/>
+        <line num="78" count="1" type="stmt"/>
+        <line num="80" count="1" type="stmt"/>
+        <line num="81" count="1" type="stmt"/>
+        <line num="84" count="1" type="stmt"/>
+        <line num="88" count="1" type="stmt"/>
+      </file>
+    </package>
+    <package name="tests">
+      <metrics statements="14" coveredstatements="14" conditionals="2" coveredconditionals="2" methods="4" coveredmethods="4"/>
+      <file name="firebaseTestEnv.js" path="C:\Users\avand\OneDrive\Bureau\API_Commandes\MSPR-Appli-Commande\tests\firebaseTestEnv.js">
+        <metrics statements="14" coveredstatements="14" conditionals="2" coveredconditionals="2" methods="4" coveredmethods="4"/>
+        <line num="1" count="2" type="stmt"/>
+        <line num="4" count="4" type="cond" truecount="2" falsecount="0"/>
+        <line num="5" count="2" type="stmt"/>
+        <line num="14" count="4" type="stmt"/>
+        <line num="15" count="4" type="stmt"/>
+        <line num="16" count="4" type="stmt"/>
+        <line num="17" count="1" type="stmt"/>
+        <line num="18" count="1" type="stmt"/>
+        <line num="23" count="2" type="stmt"/>
+        <line num="24" count="2" type="stmt"/>
+        <line num="25" count="2" type="stmt"/>
+        <line num="26" count="1" type="stmt"/>
+        <line num="27" count="1" type="stmt"/>
+        <line num="31" count="2" type="stmt"/>
+      </file>
+    </package>
   </project>
 </coverage>
