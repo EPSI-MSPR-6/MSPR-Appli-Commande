@@ -98,6 +98,13 @@ describe('Orders API', () => {
         expect(response.text).toMatch(/Commande non trouvée/);
     });
 
+    // Fonction les tests d'erreurs 400
+    const testCreateOrderError = async (invalidOrder, expectedError) => {
+        const response = await createOrder(invalidOrder);
+        expect(response.status).toBe(400);
+        expect(response.text).toBe(expectedError);
+    };
+
     // Tests Erreurs 400
     test('Erreur_400_CreateOrder_Request', async () => {
         const invalidOrder = {
@@ -107,10 +114,7 @@ describe('Orders API', () => {
             price: 29.99
         }; // Date Manquante
 
-        const response = await createOrder(invalidOrder);
-
-        expect(response.status).toBe(400);
-        expect(response.text).toBe('Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
+        await testCreateOrderError(invalidOrder, 'Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
     });
 
     test('Erreur_400_CreateOrder_Type', async () => {
@@ -118,14 +122,11 @@ describe('Orders API', () => {
             date: '2024-06-08',
             id_produit: 'prod123',
             id_client: 'client123',
-            quantity: 'deux', 
+            quantity: 'deux',
             price: 29.99
         };
 
-        const response = await createOrder(invalidOrder);
-
-        expect(response.status).toBe(400);
-        expect(response.text).toBe('Le champ quantity doit être un nombre positif.');
+        await testCreateOrderError(invalidOrder, 'Le champ quantity doit être un nombre positif.');
     });
 
     test('Erreur_400_CreateOrder_Price', async () => {
@@ -133,14 +134,11 @@ describe('Orders API', () => {
             date: '2024-07-10',
             id_produit: 'laptop157',
             id_client: 'a1b2c3d4e5',
-            quantity: 10, 
+            quantity: 10,
             price: 'neuf euros quatre-vingt-dix neuf'
         };
 
-        const response = await createOrder(invalidOrder);
-
-        expect(response.status).toBe(400);
-        expect(response.text).toBe('Le champ price doit être un nombre positif.');
+        await testCreateOrderError(invalidOrder, 'Le champ price doit être un nombre positif.');
     });
 
     test('Erreur_400_CreateOrder_InvalidDate', async () => {
@@ -152,10 +150,7 @@ describe('Orders API', () => {
             price: 29.99
         };
 
-        const response = await createOrder(invalidOrder);
-
-        expect(response.status).toBe(400);
-        expect(response.text).toBe('Le champ date doit être une date valide au format YYYY-MM-DD.');
+        await testCreateOrderError(invalidOrder, 'Le champ date doit être une date valide au format YYYY-MM-DD.');
     });
 
     test('Erreur_400_CreateOrder_InvalidIdProduit', async () => {
@@ -167,10 +162,7 @@ describe('Orders API', () => {
             price: 29.99
         };
 
-        const response = await createOrder(invalidOrder);
-
-        expect(response.status).toBe(400);
-        expect(response.text).toBe('Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
+        await testCreateOrderError(invalidOrder, 'Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
     });
 
     test('Erreur_400_CreateOrder_InvalidIdClient', async () => {
@@ -182,10 +174,7 @@ describe('Orders API', () => {
             price: 29.99
         };
 
-        const response = await createOrder(invalidOrder);
-
-        expect(response.status).toBe(400);
-        expect(response.text).toBe('Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
+        await testCreateOrderError(invalidOrder, 'Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
     });
 
     test('Erreur_400_UpdateOrder', async () => {
