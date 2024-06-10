@@ -74,7 +74,7 @@ router.delete('/:id', checkApiKey, async (req, res) => {
 });
 
 // Endpoint Pub/Sub
-router.post('/pubsub', checkApiKey, async (req, res) => {
+router.post('/pubsub', async (req, res) => {
     const message = req.body.message;
 
     if (!message || !message.data) {
@@ -104,7 +104,7 @@ async function deleteOrdersForClient(clientId) {
         });
 
         await batch.commit();
-        console.log(`Les commandes du client ${clientId} ont été supprimés`);
+        console.log(`Les commandes du client ${clientId} ont été supprimées`);
     } catch (error) {
         console.error(`Erreur lors de la suppression des commandes du client ${clientId}:`, error);
     }
