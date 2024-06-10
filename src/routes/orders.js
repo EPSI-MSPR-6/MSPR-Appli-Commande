@@ -2,15 +2,31 @@ const express = require('express');
 const router = express.Router();
 const db = require('../firebase');
 
+// REGEX pour valider les champs
+const idRegex = /^[a-zA-Z0-9]+$/;
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/; 
+
 // Middleware pour valider les champs de la commande
 const validateOrder = (req, res, next) => {
-    const { date, id_produit, id_client, quantity, price } = req.body; // Suppression de `status`
+    const { date, id_produit, id_client, quantity, price } = req.body;
+
     if (!date || !id_produit || !id_client || !quantity || !price) {
         return res.status(400).send('Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
     }
-    if (typeof date !== 'string' || typeof id_produit !== 'string' || typeof id_client !== 'string' || typeof quantity !== 'number' || typeof price !== 'number') {
-        return res.status(400).send('Les types de champs sont incorrects.');
+
+    if (!dateRegex.test(date)) {
+        return res.status(400).send('Le champ date doit être une date valide au format YYYY-MM-DD.');
     }
+    if (!idRegex.test(id_produit) || !idRegex.test(id_client)) {
+        return res.status(400).send('Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
+    }
+    if (typeof quantity !== 'number' || quantity <= 0) {
+        return res.status(400).send('Le champ quantity doit être un nombre positif.');
+    }
+    if (typeof price !== 'number' || price <= 0) {
+        return res.status(400).send('Le champ price doit être un nombre positif.');
+    }
+
     req.body.status = "En cours";
     next();
 };
