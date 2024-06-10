@@ -1,38 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../firebase');
+const { checkApiKey, validateOrder } = require('../services/middlewares');
 
-// REGEX pour valider les champs
-const idRegex = /^[a-zA-Z0-9\s'-]+$/;
-const dateRegex = /^\d{4}-\d{2}-\d{2}$/; 
-
-// Middleware pour valider les champs de la commande
-const validateOrder = (req, res, next) => {
-    const { date, id_produit, id_client, quantity, price } = req.body;
-
-    if (!date || !id_produit || !id_client || !quantity || !price) {
-        return res.status(400).send('Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
-    }
-
-    if (!dateRegex.test(date)) {
-        return res.status(400).send('Le champ date doit être une date valide au format YYYY-MM-DD.');
-    }
-    if (!idRegex.test(id_produit) || !idRegex.test(id_client)) {
-        return res.status(400).send('Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
-    }
-    if (typeof quantity !== 'number' || quantity <= 0) {
-        return res.status(400).send('Le champ quantity doit être un nombre positif.');
-    }
-    if (typeof price !== 'number' || price <= 0) {
-        return res.status(400).send('Le champ price doit être un nombre positif.');
-    }
-
-    req.body.status = "En cours";
-    next();
-};
-
-// Récupération de la liste de commandes 
-router.get('/', async (req, res) => {
+// Récupération de la liste de commandes
+router.get('/', checkApiKey, async (req, res) => {
     try {
         const ordersSnapshot = await db.collection('orders').get();
         const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -68,7 +40,7 @@ router.post('/', validateOrder, async (req, res) => {
 });
 
 // Mise à jour du statut d'une commande
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkApiKey, async (req, res) => {
     try {
         const { status } = req.body;
         if (!status) {
@@ -87,7 +59,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Suppression d'une commande via son ID
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkApiKey, async (req, res) => {
     try {
         const OrderDoc = await db.collection('orders').doc(req.params.id).get();
         if (!OrderDoc.exists) {
