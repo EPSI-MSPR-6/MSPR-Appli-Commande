@@ -119,11 +119,11 @@ describe('Orders API', () => {
 
     test('Erreur_400_CreateOrder_Type', async () => {
         const invalidOrder = {
-            date: '2024-06-08',
-            id_produit: 'prod123',
-            id_client: 'client123',
-            quantity: 'deux',
-            price: 29.99
+            date: '2024-06-09',
+            id_produit: 'key456',
+            id_client: 'client456',
+            quantity: 'trois',
+            price: 49.99
         };
 
         await testCreateOrderError(invalidOrder, 'Le champ quantity doit être un nombre positif.');
@@ -143,11 +143,11 @@ describe('Orders API', () => {
 
     test('Erreur_400_CreateOrder_InvalidDate', async () => {
         const invalidOrder = {
-            date: '08-06-2024',
-            id_produit: 'prod123',
-            id_client: 'client123',
-            quantity: 2,
-            price: 29.99
+            date: '06-06-2024',
+            id_produit: 'mouse789',
+            id_client: 'client789',
+            quantity: 10,
+            price: 9.99
         };
 
         await testCreateOrderError(invalidOrder, 'Le champ date doit être une date valide au format YYYY-MM-DD.');
@@ -155,11 +155,11 @@ describe('Orders API', () => {
 
     test('Erreur_400_CreateOrder_InvalidIdProduit', async () => {
         const invalidOrder = {
-            date: '2024-06-08',
-            id_produit: 'prod@123',
-            id_client: 'client123',
-            quantity: 2,
-            price: 29.99
+            date: '2024-06-10',
+            id_produit: '<script>alert("XSS")</script>',
+            id_client: 'client1011',
+            quantity: 20,
+            price: 49.99
         };
 
         await testCreateOrderError(invalidOrder, 'Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
@@ -167,11 +167,11 @@ describe('Orders API', () => {
 
     test('Erreur_400_CreateOrder_InvalidIdClient', async () => {
         const invalidOrder = {
-            date: '2024-06-08',
-            id_produit: 'prod123',
-            id_client: 'client@123',
-            quantity: 2,
-            price: 29.99
+            date: '2024-06-12',
+            id_produit: 'cpu753',
+            id_client: 'client1011; DROP TABLE users;',
+            quantity: 4,
+            price: 19.99
         };
 
         await testCreateOrderError(invalidOrder, 'Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');

@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../firebase');
 
 // REGEX pour valider les champs
-const idRegex = /^[a-zA-Z0-9]+$/;
+const idRegex = /^[a-zA-Z0-9\s'-]+$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/; 
 
 // Middleware pour valider les champs de la commande
