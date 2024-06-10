@@ -17,6 +17,7 @@ env:
   VERSION: ${{ secrets.VERSION }}
   FIREBASE_CLIENT_EMAIL : ${{ secrets.FIREBASE_CLIENT_EMAIL }}
   FIREBASE_PRIVATE_KEY : ${{ secrets.FIREBASE_PRIVATE_KEY }}
+  API_KEY : ${{ secrets.API_KEY }}
 
 jobs:
 
