@@ -73,4 +73,41 @@ router.delete('/:id', checkApiKey, async (req, res) => {
     }
 });
 
+// Endpoint Pub/Sub
+router.post('/pubsub', checkApiKey, async (req, res) => {
+    const message = req.body.message;
+
+    if (!message || !message.data) {
+        return res.status(400).send('Format de message non valide');
+    }
+
+    const data = Buffer.from(message.data, 'base64').toString();
+    const parsedData = JSON.parse(data);
+
+    console.log(`Message reçu: ${data}`);
+
+    if (parsedData.action === 'DELETE_CLIENT') {
+        const clientId = parsedData.clientId;
+        await deleteOrdersForClient(clientId);
+    }
+
+    res.status(200).send();
+});
+
+async function deleteOrdersForClient(clientId) {
+    try {
+        const ordersSnapshot = await db.collection('orders').where('clientId', '==', clientId).get();
+        const batch = db.batch();
+
+        ordersSnapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+        console.log(`Les commandes du client ${clientId} ont été supprimés`);
+    } catch (error) {
+        console.error(`Erreur lors de la suppression des commandes du client ${clientId}:`, error);
+    }
+}
+
 module.exports = router;
