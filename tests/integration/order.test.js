@@ -222,10 +222,10 @@ describe('Tests Pub/Sub', () => {
     test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Test 500 ) ', async () => {
         const newOrder = {
             date: '2024-06-08',
-            id_produit: 'prod123',
-            id_client: 'client123',
-            quantity: 2,
-            price: 29.99
+            id_produit: 'coffee578',
+            id_client: 'client869',
+            quantity: 4,
+            price: 49.99
         };
         const createResponse = await createOrder(newOrder);
         const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
