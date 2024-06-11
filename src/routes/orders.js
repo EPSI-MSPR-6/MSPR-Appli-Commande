@@ -96,7 +96,7 @@ router.post('/pubsub', async (req, res) => {
 
 async function deleteOrdersForClient(clientId) {
     try {
-        const ordersSnapshot = await db.collection('orders').where('clientId', '==', clientId).get();
+        const ordersSnapshot = await db.collection('orders').where('id_client', '==', clientId).get();
         const batch = db.batch();
 
         ordersSnapshot.forEach(doc => {
