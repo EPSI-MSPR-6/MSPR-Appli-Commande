@@ -3,13 +3,17 @@ const express = require('express');
 const ordersRouter = require('../../src/routes/orders.js');
 const db = require('../../src/firebase.js');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
-
+const { publishMessage } = require('../../src/services/pubsub.js');
 
 const ApiKey = process.env.API_KEY;
 
 const app = express();
 app.use(express.json());
 app.use('/orders', ordersRouter);
+
+jest.mock('../../src/services/pubsub.js', () => ({
+    publishMessage: jest.fn()
+}));
 
 beforeAll(async () => {
     await setupFirebaseTestEnv();
@@ -46,7 +50,7 @@ const deleteOrder = async (id) => {
 
 describe('Orders API', () => {
     let orderId;
-    
+
     test('Création Commande', async () => {
         const newOrder = {
             date: '2024-06-08',
@@ -87,6 +91,167 @@ describe('Orders API', () => {
         const response = await deleteOrder(orderId);
         expect(response.status).toBe(200);
         expect(response.text).toBe('Commande supprimée');
+    });
+});
+
+describe('Tests Pub/Sub', () => {
+    test('Pub/Sub - DELETE_CLIENT - Succès', async () => {
+        const newOrder = {
+            date: '2024-06-08',
+            id_produit: 'prod123',
+            id_client: 'clientToDelete',
+            quantity: 2,
+            price: 29.99
+        };
+        await createOrder(newOrder);
+
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'DELETE_CLIENT',
+                    clientId: 'clientToDelete'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(200);
+        expect(response.text).toBe('Les commandes du client clientToDelete ont été supprimées');
+    });
+
+    test('Pub/Sub - ORDER_CONFIRMATION - Succès', async () => {
+        const newOrder = {
+            date: '2024-06-08',
+            id_produit: 'prod123',
+            id_client: 'client123',
+            quantity: 2,
+            price: 29.99
+        };
+        const createResponse = await createOrder(newOrder);
+        const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
+
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'ORDER_CONFIRMATION',
+                    orderId: orderId,
+                    status: 'Confirmée'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(200);
+        expect(response.text).toBe(`Statut de la commande ${orderId} mis à jour à : Confirmée`);
+    });
+
+    test('Pub/Sub - Action Inconnue', async () => {
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'UNKNOWN_ACTION'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(400);
+        expect(response.text).toBe('Action non reconnue');
+    });
+
+    test('Pub/Sub - Echec ( Format non valide )', async () => {
+        const message = {
+            message: {}
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(400);
+        expect(response.text).toBe('Format de message non valide');
+    });
+
+    test('Pub/Sub - DELETE_CLIENT - Echec ( Test 500 )', async () => {
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'DELETE_CLIENT',
+                    clientId: 'nonExistentClient'
+                })).toString('base64')
+            }
+        };
+
+        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+            return {
+                where: jest.fn().mockReturnThis(),
+                get: jest.fn().mockRejectedValue(new Error('Test error'))
+            };
+        });
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(500);
+        expect(response.text).toBe('Erreur lors de la suppression des commandes du client nonExistentClient');
+    });
+
+    test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Order doesn\'t existe)', async () => {
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'ORDER_CONFIRMATION',
+                    orderId: 'nonExistentOrder',
+                    status: 'Confirmée'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(404);
+        expect(response.text).toBe(`Commande non trouvée pour l'ID nonExistentOrder`);
+    });
+
+    test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Test 500 ) ', async () => {
+        const newOrder = {
+            date: '2024-06-08',
+            id_produit: 'prod123',
+            id_client: 'client123',
+            quantity: 2,
+            price: 29.99
+        };
+        const createResponse = await createOrder(newOrder);
+        const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
+
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'ORDER_CONFIRMATION',
+                    orderId: orderId,
+                    status: 'Confirmée'
+                })).toString('base64')
+            }
+        };
+
+        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+            return {
+                doc: jest.fn().mockReturnThis(),
+                get: jest.fn().mockRejectedValue(new Error('Test error'))
+            };
+        });
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(500);
+        expect(response.text).toBe(`Erreur lors de la mise à jour de la commande ${orderId}`);
     });
 });
 
@@ -210,8 +375,8 @@ describe('Tests400', () => {
 
 describe('Tests500', () => {
     beforeEach(() => {
-        db.collection = jest.fn(() => {
-            throw new Error();
+        jest.spyOn(db, 'collection').mockImplementation(() => {
+            throw new Error('Test error');
         });
     });
 
@@ -227,7 +392,7 @@ describe('Tests500', () => {
         expect(response.status).toBe(500);
         expect(response.text).toMatch(/Erreur lors de la création de la commande : /);
     });
-    
+
     test('Erreur_500_GetOrders', async () => {
         const response = await getOrdersWithApiKey();
         expect(response.status).toBe(500);

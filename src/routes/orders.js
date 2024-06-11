@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../firebase');
 const { checkApiKey, validateOrder } = require('../services/middlewares');
+const { publishMessage } = require('../services/pubsub.js');
 
 // Récupération de la liste de commandes
 router.get('/', checkApiKey, async (req, res) => {
@@ -98,16 +99,16 @@ router.post('/pubsub', async (req, res) => {
 
     if (parsedData.action === 'DELETE_CLIENT') {
         const clientId = parsedData.clientId;
-        await deleteOrdersForClient(clientId);
+        await deleteOrdersForClient(clientId, res);
     } else if (parsedData.action === 'ORDER_CONFIRMATION') {
         const { orderId, status } = parsedData;
-        await updateOrderStatus(orderId, status);
+        await updateOrderStatus(orderId, status, res);
+    } else {
+        res.status(400).send('Action non reconnue');
     }
-
-    res.status(200).send();
 });
 
-async function deleteOrdersForClient(clientId) {
+async function deleteOrdersForClient(clientId, res) {
     try {
         const ordersSnapshot = await db.collection('orders').where('id_client', '==', clientId).get();
         const batch = db.batch();
@@ -117,24 +118,24 @@ async function deleteOrdersForClient(clientId) {
         });
 
         await batch.commit();
-        console.log(`Les commandes du client ${clientId} ont été supprimées`);
+        res.status(200).send(`Les commandes du client ${clientId} ont été supprimées`);
     } catch (error) {
-        console.error(`Erreur lors de la suppression des commandes du client ${clientId}:`, error);
+        res.status(500).send(`Erreur lors de la suppression des commandes du client ${clientId}`);
     }
 }
 
-async function updateOrderStatus(orderId, status) {
+async function updateOrderStatus(orderId, status, res) {
     try {
         const orderRef = db.collection('orders').doc(orderId);
         const orderDoc = await orderRef.get();
         if (!orderDoc.exists) {
-            console.error(`Commande non trouvée pour l'ID ${orderId}`);
+            res.status(404).send(`Commande non trouvée pour l'ID ${orderId}`);
             return;
         }
         await orderRef.update({ status });
-        console.log(`Statut de la commande ${orderId} mis à jour à : ${status}`);
+        res.status(200).send(`Statut de la commande ${orderId} mis à jour à : ${status}`);
     } catch (error) {
-        console.error(`Erreur lors de la mise à jour de la commande ${orderId}:`, error);
+        res.status(500).send(`Erreur lors de la mise à jour de la commande ${orderId}`);
     }
 }
 
