@@ -3,7 +3,6 @@ const express = require('express');
 const ordersRouter = require('../../src/routes/orders.js');
 const db = require('../../src/firebase.js');
 const { setupFirebaseTestEnv, teardownFirebaseTestEnv } = require('../firebaseTestEnv.js');
-const { publishMessage } = require('../../src/services/pubsub.js');
 
 const ApiKey = process.env.API_KEY;
 
