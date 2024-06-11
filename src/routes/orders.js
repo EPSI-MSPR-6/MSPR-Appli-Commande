@@ -33,6 +33,16 @@ router.post('/', validateOrder, async (req, res) => {
     try {
         const newOrder = req.body;
         const docRef = await db.collection('orders').add(newOrder);
+
+        // Publier un message Pub/Sub après la création de la commande
+        await publishMessage('client-actions', {
+            action: 'CREATE_ORDER',
+            orderId: docRef.id,
+            quantity: newOrder.quantity,
+            productId: newOrder.productId,
+            message: 'Create order'
+        });
+
         res.status(201).send('Commande créée avec son ID : ' + docRef.id);
     } catch (error) {
         res.status(500).send('Erreur lors de la création de la commande : ' + error.message);
@@ -89,6 +99,9 @@ router.post('/pubsub', async (req, res) => {
     if (parsedData.action === 'DELETE_CLIENT') {
         const clientId = parsedData.clientId;
         await deleteOrdersForClient(clientId);
+    } else if (parsedData.action === 'ORDER_CONFIRMATION') {
+        const { orderId, status } = parsedData;
+        await updateOrderStatus(orderId, status);
     }
 
     res.status(200).send();
@@ -107,6 +120,21 @@ async function deleteOrdersForClient(clientId) {
         console.log(`Les commandes du client ${clientId} ont été supprimées`);
     } catch (error) {
         console.error(`Erreur lors de la suppression des commandes du client ${clientId}:`, error);
+    }
+}
+
+async function updateOrderStatus(orderId, status) {
+    try {
+        const orderRef = db.collection('orders').doc(orderId);
+        const orderDoc = await orderRef.get();
+        if (!orderDoc.exists) {
+            console.error(`Commande non trouvée pour l'ID ${orderId}`);
+            return;
+        }
+        await orderRef.update({ status });
+        console.log(`Statut de la commande ${orderId} mis à jour à : ${status}`);
+    } catch (error) {
+        console.error(`Erreur lors de la mise à jour de la commande ${orderId}:`, error);
     }
 }
 

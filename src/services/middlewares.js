@@ -31,7 +31,7 @@ const validateOrder = (req, res, next) => {
         return res.status(400).send('Le champ price doit être un nombre positif.');
     }
 
-    req.body.status = "En cours";
+    req.body.status = "En attente de confirmation";
     next();
 };
 
