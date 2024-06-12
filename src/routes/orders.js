@@ -40,7 +40,7 @@ router.post('/', validateOrder, async (req, res) => {
             action: 'CREATE_ORDER',
             orderId: docRef.id,
             quantity: newOrder.quantity,
-            productId: newOrder.productId,
+            productId: newOrder.id_produit,
             message: 'Create order'
         });
 
