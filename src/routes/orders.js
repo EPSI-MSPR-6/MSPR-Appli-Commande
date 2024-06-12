@@ -36,7 +36,7 @@ router.post('/', validateOrder, async (req, res) => {
         const docRef = await db.collection('orders').add(newOrder);
 
         // Publier un message Pub/Sub après la création de la commande
-        await publishMessage('client-actions', {
+        await publishMessage('order-actions', {
             action: 'CREATE_ORDER',
             orderId: docRef.id,
             quantity: newOrder.quantity,
@@ -94,8 +94,6 @@ router.post('/pubsub', async (req, res) => {
 
     const data = Buffer.from(message.data, 'base64').toString();
     const parsedData = JSON.parse(data);
-
-    console.log(`Message reçu: ${data}`);
 
     if (parsedData.action === 'DELETE_CLIENT') {
         const clientId = parsedData.clientId;
