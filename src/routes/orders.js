@@ -53,15 +53,15 @@ router.post('/', validateOrder, async (req, res) => {
 // Mise à jour du statut d'une commande
 router.put('/:id', checkApiKey, async (req, res) => {
     try {
-        const { status } = req.body;
-        if (!status) {
-            return res.status(400).send('Seul le champ status peut être mis à jour.');
+        const { status, price } = req.body;
+        if (status === undefined && price === undefined) {
+            return res.status(400).send('Seuls les champs status et price peuvent être mis à jour.');
         }
         const OrderDoc = await db.collection('orders').doc(req.params.id).get();
         if (!OrderDoc.exists) {
             res.status(404).send('Commande non trouvée');
         } else {
-            await db.collection('orders').doc(req.params.id).update({ status });
+            await db.collection('orders').doc(req.params.id).update({ status, price });
             res.status(200).send('Statut de la commande mis à jour');
         }
     } catch (error) {
@@ -99,8 +99,8 @@ router.post('/pubsub', async (req, res) => {
         const clientId = parsedData.clientId;
         await deleteOrdersForClient(clientId, res);
     } else if (parsedData.action === 'ORDER_CONFIRMATION') {
-        const { orderId, status } = parsedData;
-        await updateOrderStatus(orderId, status, res);
+        const { orderId, price, status } = parsedData;
+        await updateOrderStatus(orderId, price, status, res);
     } else {
         res.status(400).send('Action non reconnue');
     }
@@ -122,7 +122,7 @@ async function deleteOrdersForClient(clientId, res) {
     }
 }
 
-async function updateOrderStatus(orderId, status, res) {
+async function updateOrderStatus(orderId, price, status, res) {
     try {
         const orderRef = db.collection('orders').doc(orderId);
         const orderDoc = await orderRef.get();
@@ -130,8 +130,16 @@ async function updateOrderStatus(orderId, status, res) {
             res.status(404).send(`Commande non trouvée pour l'ID ${orderId}`);
             return;
         }
-        await orderRef.update({ status });
-        res.status(200).send(`Statut de la commande ${orderId} mis à jour à : ${status}`);
+        const updates = {};
+        if (price !== undefined) {
+            updates.price = price;
+        }else{
+            updates.price = 0   
+        }
+        updates.status = status;
+        
+        await orderRef.update(updates);
+        res.status(200).send(`Statut et prix de la commande ${orderId} mis à jour`);
     } catch (error) {
         res.status(500).send(`Erreur lors de la mise à jour de la commande ${orderId}`);
     }

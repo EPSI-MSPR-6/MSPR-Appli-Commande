@@ -14,8 +14,12 @@ const checkApiKey = (req, res, next) => {
 const validateOrder = (req, res, next) => {
     const { date, id_produit, id_client, quantity, price } = req.body;
 
-    if (!date || !id_produit || !id_client || !quantity || !price) {
-        return res.status(400).send('Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
+    if (!date || !id_produit || !id_client || !quantity) {
+        return res.status(400).send('Tous les champs date, id_produit, id_client, quantity sont obligatoires.');
+    }
+
+    if (price !== undefined) {
+        return res.status(400).send('Le champ price ne doit pas être envoyé.');
     }
 
     if (!dateRegex.test(date)) {
@@ -27,10 +31,6 @@ const validateOrder = (req, res, next) => {
     if (typeof quantity !== 'number' || quantity <= 0) {
         return res.status(400).send('Le champ quantity doit être un nombre positif.');
     }
-    if (typeof price !== 'number' || price <= 0) {
-        return res.status(400).send('Le champ price doit être un nombre positif.');
-    }
-
     req.body.status = "En attente de confirmation";
     next();
 };

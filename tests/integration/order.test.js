@@ -56,7 +56,6 @@ describe('Orders API', () => {
             id_produit: 'prod123',
             id_client: 'client123',
             quantity: 2,
-            price: 29.99
         };
         const response = await createOrder(newOrder);
 
@@ -81,7 +80,7 @@ describe('Orders API', () => {
     });
 
     test('Mis à jour Commande', async () => {
-        const response = await updateOrder(orderId, { status: 'Livrée' });
+        const response = await updateOrder(orderId, { status: 'Livrée', price: 100 });
         expect(response.status).toBe(200);
         expect(response.text).toBe('Statut de la commande mis à jour');
     });
@@ -100,7 +99,6 @@ describe('Tests Pub/Sub', () => {
             id_produit: 'prod123',
             id_client: 'clientToDelete',
             quantity: 2,
-            price: 29.99
         };
         await createOrder(newOrder);
 
@@ -120,13 +118,12 @@ describe('Tests Pub/Sub', () => {
         expect(response.text).toBe('Les commandes du client clientToDelete ont été supprimées');
     });
 
-    test('Pub/Sub - ORDER_CONFIRMATION - Succès', async () => {
+    test('Pub/Sub - ORDER_CONFIRMATION - Succès ( undefined price)', async () => {
         const newOrder = {
             date: '2024-06-08',
             id_produit: 'prod123',
             id_client: 'client123',
             quantity: 2,
-            price: 29.99
         };
         const createResponse = await createOrder(newOrder);
         const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
@@ -136,6 +133,7 @@ describe('Tests Pub/Sub', () => {
                 data: Buffer.from(JSON.stringify({
                     action: 'ORDER_CONFIRMATION',
                     orderId: orderId,
+                    price : undefined,
                     status: 'Confirmée'
                 })).toString('base64')
             }
@@ -145,7 +143,35 @@ describe('Tests Pub/Sub', () => {
             .post('/orders/pubsub')
             .send(message);
         expect(response.status).toBe(200);
-        expect(response.text).toBe(`Statut de la commande ${orderId} mis à jour à : Confirmée`);
+        expect(response.text).toBe(`Statut et prix de la commande ${orderId} mis à jour`);
+    });
+
+    test('Pub/Sub - ORDER_CONFIRMATION - Succès ( defined price)', async () => {
+        const newOrder = {
+            date: '2024-06-15',
+            id_produit: 'coffee753',
+            id_client: 'client147',
+            quantity: 5,
+        };
+        const createResponse = await createOrder(newOrder);
+        const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
+
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'ORDER_CONFIRMATION',
+                    orderId: orderId,
+                    price : 40,
+                    status: 'Confirmée'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        expect(response.status).toBe(200);
+        expect(response.text).toBe(`Statut et prix de la commande ${orderId} mis à jour`);
     });
 
     test('Pub/Sub - Action Inconnue', async () => {
@@ -206,6 +232,7 @@ describe('Tests Pub/Sub', () => {
                 data: Buffer.from(JSON.stringify({
                     action: 'ORDER_CONFIRMATION',
                     orderId: 'nonExistentOrder',
+                    price : 10,
                     status: 'Confirmée'
                 })).toString('base64')
             }
@@ -224,7 +251,6 @@ describe('Tests Pub/Sub', () => {
             id_produit: 'coffee578',
             id_client: 'client869',
             quantity: 4,
-            price: 49.99
         };
         const createResponse = await createOrder(newOrder);
         const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
@@ -234,6 +260,7 @@ describe('Tests Pub/Sub', () => {
                 data: Buffer.from(JSON.stringify({
                     action: 'ORDER_CONFIRMATION',
                     orderId: orderId,
+                    price : 25,
                     status: 'Confirmée'
                 })).toString('base64')
             }
@@ -298,34 +325,32 @@ describe('Tests400', () => {
             id_produit: 'prod123',
             id_client: 'client123',
             quantity: 2,
-            price: 29.99
         }; // Date Manquante
 
-        await testCreateOrderError(invalidOrder, 'Tous les champs date, id_produit, id_client, quantity et price sont obligatoires.');
+        await testCreateOrderError(invalidOrder, 'Tous les champs date, id_produit, id_client, quantity sont obligatoires.');
+    });
+
+    test('Erreur_400_CreateOrder_PriceParams', async () => {
+        const invalidOrderWithPrice = {
+            date: '2024-06-10',
+            id_produit: 'cappu593',
+            id_client: 'client121',
+            quantity: 5,
+            price: 100
+        };
+
+        await testCreateOrderError(invalidOrderWithPrice, 'Le champ price ne doit pas être envoyé.');
     });
 
     test('Erreur_400_CreateOrder_InvalidQuantity', async () => {
         const invalidOrder = {
-            date: '2024-06-09',
-            id_produit: 'key456',
-            id_client: 'client456',
+            date: '2024-06-11',
+            id_produit: 'latte751',
+            id_client: 'client753',
             quantity: 'trois',
-            price: 49.99
         };
 
         await testCreateOrderError(invalidOrder, 'Le champ quantity doit être un nombre positif.');
-    });
-
-    test('Erreur_400_CreateOrder_InvalidPrice', async () => {
-        const invalidOrder = {
-            date: '2024-07-10',
-            id_produit: 'laptop157',
-            id_client: 'a1b2c3d4e5',
-            quantity: 10,
-            price: 'neuf euros quatre-vingt-dix neuf'
-        };
-
-        await testCreateOrderError(invalidOrder, 'Le champ price doit être un nombre positif.');
     });
 
     test('Erreur_400_CreateOrder_InvalidDate', async () => {
@@ -334,7 +359,6 @@ describe('Tests400', () => {
             id_produit: 'mouse789',
             id_client: 'client789',
             quantity: 10,
-            price: 9.99
         };
 
         await testCreateOrderError(invalidOrder, 'Le champ date doit être une date valide au format YYYY-MM-DD.');
@@ -346,7 +370,6 @@ describe('Tests400', () => {
             id_produit: '<script>alert("XSS")</script>',
             id_client: 'client1011',
             quantity: 20,
-            price: 49.99
         };
 
         await testCreateOrderError(invalidOrder, 'Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
@@ -358,17 +381,16 @@ describe('Tests400', () => {
             id_produit: 'cpu753',
             id_client: 'client1011; DROP TABLE users;',
             quantity: 4,
-            price: 19.99
         };
 
         await testCreateOrderError(invalidOrder, 'Les champs id_produit et id_client doivent contenir uniquement des lettres et des chiffres.');
     });
 
     test('Erreur_400_UpdateOrder_InvalidParams', async () => {
-        const response = await updateOrder('test', { price: 500.00 });
+        const response = await updateOrder('test', { id_produit: 12345679 });
 
         expect(response.status).toBe(400);
-        expect(response.text).toBe('Seul le champ status peut être mis à jour.');
+        expect(response.text).toBe('Seuls les champs status et price peuvent être mis à jour.');
     });
 });
 
@@ -385,7 +407,6 @@ describe('Tests500', () => {
             id_produit: 'prod123',
             id_client: 'client123',
             quantity: 2,
-            price: 29.99
         });
 
         expect(response.status).toBe(500);
