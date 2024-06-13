@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../firebase');
-const { checkApiKey, validateOrder } = require('../services/middlewares');
+const { checkApiKey, validateOrder, validateUpdateOrder } = require('../services/middlewares');
 const { publishMessage } = require('../services/pubsub.js');
 
 // Récupération de la liste de commandes
@@ -58,7 +58,7 @@ router.post('/', validateOrder, async (req, res) => {
 
 
 // Mise à jour du statut d'une commande
-router.put('/:id', checkApiKey, async (req, res) => {
+router.put('/:id', checkApiKey,validateUpdateOrder, async (req, res) => {
     try {
         const { status, price } = req.body;
         if (status === undefined && price === undefined) {

@@ -339,7 +339,7 @@ describe('Tests400', () => {
             price: 100
         };
 
-        await testCreateOrderError(invalidOrderWithPrice, 'Le champ price ne doit pas être envoyé.');
+        await testCreateOrderError(invalidOrderWithPrice, 'Les champs suivants ne sont pas autorisés : price');
     });
 
     test('Erreur_400_CreateOrder_InvalidQuantity', async () => {
@@ -390,7 +390,14 @@ describe('Tests400', () => {
         const response = await updateOrder('test', { id_produit: 12345679 });
 
         expect(response.status).toBe(400);
-        expect(response.text).toBe('Seuls les champs status et price peuvent être mis à jour.');
+        expect(response.text).toBe('Les champs suivants ne sont pas autorisés pour la mise à jour : id_produit');
+    });
+
+    test('Erreur_400_UpdateOrder_AddingID', async () => {
+        const response = await updateOrder('test', { id: 12345679 });
+
+        expect(response.status).toBe(400);
+        expect(response.text).toBe('L\'ID de la commande ne peut pas être modifié.');
     });
 });
 

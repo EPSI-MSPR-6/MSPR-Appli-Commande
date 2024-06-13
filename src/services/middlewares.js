@@ -1,6 +1,7 @@
-// src/services/middlewares.js
 const idRegex = /^[a-zA-Z0-9\s'-]+$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const create_allowedFields = ['date', 'id_produit', 'id_client', 'quantity'];
+const update_allowedFields = ['status', 'price'];
 
 const checkApiKey = (req, res, next) => {
     const apiKey = req.headers['x-api-key'];
@@ -13,6 +14,11 @@ const checkApiKey = (req, res, next) => {
 
 const validateOrder = (req, res, next) => {
     const { date, id_produit, id_client, quantity, price } = req.body;
+
+    const unwantedFields = Object.keys(req.body).filter(key => !create_allowedFields.includes(key));
+    if (unwantedFields.length > 0) {
+        return res.status(400).send(`Les champs suivants ne sont pas autorisés : ${unwantedFields.join(', ')}`);
+    }
 
     if (!date || !id_produit || !id_client || !quantity) {
         return res.status(400).send('Tous les champs date, id_produit, id_client, quantity sont obligatoires.');
@@ -35,4 +41,22 @@ const validateOrder = (req, res, next) => {
     next();
 };
 
-module.exports = { checkApiKey, validateOrder };
+const validateUpdateOrder = (req, res, next) => {
+    const { id, status, price } = req.body;
+
+    if (id && id !== req.params.id) {
+        return res.status(400).send("L'ID de la commande ne peut pas être modifié.");
+    }
+    
+    const unwantedFields = Object.keys(req.body).filter(key => !update_allowedFields.includes(key));
+    if (unwantedFields.length > 0) {
+        return res.status(400).send(`Les champs suivants ne sont pas autorisés pour la mise à jour : ${unwantedFields.join(', ')}`);
+    }
+
+    if (status === undefined && price === undefined) {
+        return res.status(400).send('Seuls les champs status et price peuvent être mis à jour.');
+    }
+    
+    next();
+};
+module.exports = { checkApiKey, validateOrder, validateUpdateOrder };
