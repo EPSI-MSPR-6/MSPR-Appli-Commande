@@ -43,12 +43,12 @@ router.post('/', validateOrder, async (req, res) => {
             productId: newOrder.id_produit,
             message: 'Create order'
         });
-        
-        await publishMessage('order-client-actions', {
+
+        // Vérification si le client existe
+        await publishMessage('orders-client-actions', {
             action: 'VERIF_CLIENT',
-            orderId: docRef.id,
             clientId: newOrder.id_client,
-            message: 'Order created for client'
+            orderId: docRef.id
         });
 
         res.status(201).send('Commande créée avec son ID : ' + docRef.id);
@@ -56,6 +56,7 @@ router.post('/', validateOrder, async (req, res) => {
         res.status(500).send('Erreur lors de la création de la commande : ' + error.message);
     }
 });
+
 
 // Mise à jour du statut d'une commande
 router.put('/:id', checkApiKey, async (req, res) => {
