@@ -48,7 +48,6 @@ router.post('/', validateOrder, async (req, res) => {
         await publishMessage('orders-client-actions', {
             action: 'VERIF_CLIENT',
             clientId: newOrder.id_client,
-            orderId: docRef.id
         });
 
         res.status(201).send('Commande créée avec son ID : ' + docRef.id);
