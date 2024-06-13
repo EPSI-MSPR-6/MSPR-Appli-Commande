@@ -45,7 +45,7 @@ router.post('/', validateOrder, async (req, res) => {
         });
 
         // Vérification si le client existe
-        await publishMessage('orders-client-actions', {
+        await publishMessage('order-client-actions', {
             action: 'VERIF_CLIENT',
             clientId: newOrder.id_client,
         });
