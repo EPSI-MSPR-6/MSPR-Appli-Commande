@@ -44,6 +44,13 @@ router.post('/', validateOrder, async (req, res) => {
             message: 'Create order'
         });
 
+        await publishMessage('order-client-actions', {
+            action: 'VERIF_CLIENT',
+            orderId: docRef.id,
+            clientId: newOrder.id_client,
+            message: 'Order created for client'
+        });
+
         res.status(201).send('Commande créée avec son ID : ' + docRef.id);
     } catch (error) {
         res.status(500).send('Erreur lors de la création de la commande : ' + error.message);
