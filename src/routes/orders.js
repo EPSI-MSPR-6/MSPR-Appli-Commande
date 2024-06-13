@@ -36,19 +36,19 @@ router.post('/', validateOrder, async (req, res) => {
         const docRef = await db.collection('orders').add(newOrder);
 
         // Publier un message Pub/Sub après la création de la commande
+        await publishMessage('order-client-actions', {
+            action: 'VERIF_CLIENT',
+            orderId: docRef.id,
+            clientId: newOrder.id_client,
+            message: 'Order created for client'
+        });
+        
         await publishMessage('order-actions', {
             action: 'CREATE_ORDER',
             orderId: docRef.id,
             quantity: newOrder.quantity,
             productId: newOrder.id_produit,
             message: 'Create order'
-        });
-
-        await publishMessage('order-client-actions', {
-            action: 'VERIF_CLIENT',
-            orderId: docRef.id,
-            clientId: newOrder.id_client,
-            message: 'Order created for client'
         });
 
         res.status(201).send('Commande créée avec son ID : ' + docRef.id);
