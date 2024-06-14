@@ -359,6 +359,31 @@ describe('Tests400', () => {
 });
 
 describe('Tests500', () => {
+    const testPubSubError = async (action, clientId, errorMessage, errorType = 'Test error') => {
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: action,
+                    clientId: clientId
+                })).toString('base64')
+            }
+        };
+        
+        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+            return {
+                where: jest.fn().mockReturnThis(),
+                get: jest.fn().mockRejectedValue(new Error(errorType))
+            };
+        });
+    
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+        
+        expect(response.status).toBe(500);
+        expect(response.text).toBe(errorMessage);
+    };
+
     beforeEach(() => {
         jest.spyOn(db, 'collection').mockImplementation(() => {
             throw new Error('Test error');
@@ -401,29 +426,13 @@ describe('Tests500', () => {
         expect(response.text).toMatch(/Erreur lors de la suppression de la commande : /);
     });
 
-    test('Pub/Sub - DELETE_CLIENT - Echec ( Test 500 )', async () => {
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'DELETE_CLIENT',
-                    clientId: 'nonExistentClient'
-                })).toString('base64')
-            }
-        };
-
-        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
-            return {
-                where: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error'))
-            };
-        });
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
-        expect(response.status).toBe(500);
-        expect(response.text).toBe('Erreur lors de la suppression des commandes du client nonExistentClient');
-    });
+test('Pub/Sub - DELETE_CLIENT - Echec ( Test 500 )', async () => {
+    await testPubSubError(
+        'DELETE_CLIENT', 
+        'nonExistentClient', 
+        'Erreur lors de la suppression des commandes du client nonExistentClient'
+    );
+});
 
     test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Test 500 ) ', async () => {
         const newOrder = {
@@ -449,7 +458,7 @@ describe('Tests500', () => {
         jest.spyOn(db, 'collection').mockImplementationOnce(() => {
             return {
                 doc: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error 2'))
+                get: jest.fn().mockRejectedValue(new Error('Test error '))
             };
         });
 
@@ -461,28 +470,11 @@ describe('Tests500', () => {
     });
 
     test('Pub/Sub - GET_ORDERS_BY_CLIENT - Echec ( Test 500 )', async () => {
-        const clientId = 'clientWithError';
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'GET_ORDERS_BY_CLIENT',
-                    clientId: clientId
-                })).toString('base64')
-            }
-        };
-
-        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
-            return {
-                where: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error 2'))
-            };
-        });
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
-
-        expect(response.status).toBe(500);
-        expect(response.text).toBe('Erreur lors de la récupération des commandes du client : Test error 2');
+        await testPubSubError(
+            'GET_ORDERS_BY_CLIENT', 
+            'clientWithError', 
+            'Erreur lors de la récupération des commandes du client : Test error 2', 
+            'Test error 2'
+        );
     });
 });
