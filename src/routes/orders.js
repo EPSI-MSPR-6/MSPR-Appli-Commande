@@ -35,7 +35,7 @@ router.post('/', validateOrder, async (req, res) => {
         const newOrder = req.body;
         const docRef = await db.collection('orders').add(newOrder);
 
-        // Publier un message Pub/Sub après la création de la commande
+        // Vérification si le produit existe
         await publishMessage('order-actions', {
             action: 'CREATE_ORDER',
             orderId: docRef.id,
@@ -57,13 +57,11 @@ router.post('/', validateOrder, async (req, res) => {
 });
 
 
-// Mise à jour du statut d'une commande
+// Mise à jour d'une commande
 router.put('/:id', checkApiKey,validateUpdateOrder, async (req, res) => {
     try {
         const { status, price } = req.body;
-        if (status === undefined && price === undefined) {
-            return res.status(400).send('Seuls les champs status et price peuvent être mis à jour.');
-        }
+        
         const OrderDoc = await db.collection('orders').doc(req.params.id).get();
         if (!OrderDoc.exists) {
             res.status(404).send('Commande non trouvée');
@@ -160,7 +158,6 @@ async function getOrdersByClientID(clientId, res) {
         const ordersSnapshot = await db.collection('orders').where('id_client', '==', clientId).get();
         const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        console.log(`Commandes récupérées pour le client ${clientId}:`, orders);
 
         await publishMessage('client-orders-actions', {
             action: 'ORDERS_BY_CLIENT',

@@ -3,6 +3,7 @@ const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 const create_allowedFields = ['date', 'id_produit', 'id_client', 'quantity'];
 const update_allowedFields = ['status', 'price'];
 
+// Vérification API key en header
 const checkApiKey = (req, res, next) => {
     const apiKey = req.headers['x-api-key'];
     if (apiKey && apiKey === process.env.API_KEY) {
@@ -12,6 +13,7 @@ const checkApiKey = (req, res, next) => {
     }
 };
 
+// Vérification unputs entrants Création Commande
 const validateOrder = (req, res, next) => {
     const { date, id_produit, id_client, quantity, price } = req.body;
 
@@ -22,10 +24,6 @@ const validateOrder = (req, res, next) => {
 
     if (!date || !id_produit || !id_client || !quantity) {
         return res.status(400).send('Tous les champs date, id_produit, id_client, quantity sont obligatoires.');
-    }
-
-    if (price !== undefined) {
-        return res.status(400).send('Le champ price ne doit pas être envoyé.');
     }
 
     if (!dateRegex.test(date)) {
@@ -41,6 +39,7 @@ const validateOrder = (req, res, next) => {
     next();
 };
 
+// Vérification inputs entrants mis à jour Commande
 const validateUpdateOrder = (req, res, next) => {
     const { id, status, price } = req.body;
 

@@ -9,6 +9,7 @@ const pubSubClient = new PubSub({
   }
 });
 
+// Fonction Publication Message PubSub
 async function publishMessage(topicName, data) {
     const dataBuffer = Buffer.from(JSON.stringify(data));
 
