@@ -226,7 +226,7 @@ describe('Tests Pub/Sub', () => {
         expect(response.text).toBe('Erreur lors de la suppression des commandes du client nonExistentClient');
     });
 
-    test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Order doesn\'t existe)', async () => {
+    test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Order doesn\'t exist )', async () => {
         const message = {
             message: {
                 data: Buffer.from(JSON.stringify({
@@ -278,6 +278,77 @@ describe('Tests Pub/Sub', () => {
             .send(message);
         expect(response.status).toBe(500);
         expect(response.text).toBe(`Erreur lors de la mise à jour de la commande ${orderId}`);
+    });
+
+    test('Pub/Sub - GET_ORDERS - Succès avec commandes', async () => {
+        const newOrder = {
+            date: '2024-06-08',
+            id_produit: 'prod123',
+            id_client: 'clientWithOrders',
+            quantity: 2,
+        };
+        await createOrder(newOrder);
+
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'GET_ORDERS',
+                    clientId: 'clientWithOrders'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toBeInstanceOf(Array);
+        expect(response.body.length).toBeGreaterThan(0);
+    });
+
+    test('Pub/Sub - GET_ORDERS - Succès sans commandes', async () => {
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'GET_ORDERS',
+                    clientId: 'clientWithoutOrders'
+                })).toString('base64')
+            }
+        };
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('message', "Aucune commande n'a été trouvée pour cet utilisateur.");
+        expect(response.body.orders).toEqual([]);
+    });
+
+    test('Pub/Sub - GET_ORDERS - Echec ( Test 500 )', async () => {
+        const message = {
+            message: {
+                data: Buffer.from(JSON.stringify({
+                    action: 'GET_ORDERS',
+                    clientId: 'clientWithError'
+                })).toString('base64')
+            }
+        };
+
+        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+            return {
+                where: jest.fn().mockReturnThis(),
+                get: jest.fn().mockRejectedValue(new Error('Test error'))
+            };
+        });
+
+        const response = await request(app)
+            .post('/orders/pubsub')
+            .send(message);
+
+        expect(response.status).toBe(500);
+        expect(response.text).toBe('Erreur lors de la récupération des commandes du client : Test error');
     });
 });
 
@@ -398,6 +469,13 @@ describe('Tests400', () => {
 
         expect(response.status).toBe(400);
         expect(response.text).toBe('L\'ID de la commande ne peut pas être modifié.');
+    });
+
+    test('Erreur_400_UpdateOrder_MissingParams', async () => {
+        const response = await updateOrder('test', { status: undefined });
+
+        expect(response.status).toBe(400);
+        expect(response.text).toBe('Seuls les champs status et price peuvent être mis à jour.');
     });
 });
 
