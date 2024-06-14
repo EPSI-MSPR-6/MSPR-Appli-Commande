@@ -61,7 +61,9 @@ router.post('/', validateOrder, async (req, res) => {
 router.put('/:id', checkApiKey,validateUpdateOrder, async (req, res) => {
     try {
         const { status, price } = req.body;
-
+        if (status === undefined && price === undefined) {
+            return res.status(400).send('Seuls les champs status et price peuvent être mis à jour.');
+        }
         const OrderDoc = await db.collection('orders').doc(req.params.id).get();
         if (!OrderDoc.exists) {
             res.status(404).send('Commande non trouvée');
@@ -106,9 +108,9 @@ router.post('/pubsub', async (req, res) => {
     } else if (parsedData.action === 'ORDER_CONFIRMATION') {
         const { orderId, price, status } = parsedData;
         await updateOrderStatus(orderId, price, status, res);
-    } else if (parsedData.action === 'GET_ORDERS') {
+    } else if (parsedData.action === 'GET_ORDERS_BY_CLIENT') {
         const clientId = parsedData.clientId;
-        await getOrdersForClient(clientId, res);
+        await getOrdersByClientID(clientId, res);
     } else {
         res.status(400).send('Action non reconnue');
     }
@@ -153,18 +155,24 @@ async function updateOrderStatus(orderId, price, status, res) {
     }
 }
 
-async function getOrdersForClient(clientId, res) {
+async function getOrdersByClientID(clientId, res) {
     try {
         const ordersSnapshot = await db.collection('orders').where('id_client', '==', clientId).get();
-        if (ordersSnapshot.empty) {
-            res.status(200).json({ message: "Aucune commande n'a été trouvée pour cet utilisateur.", orders: [] });
-        } else {
-            const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            res.status(200).json(orders);
-        }
+        const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        console.log(`Commandes récupérées pour le client ${clientId}:`, orders);
+
+        await publishMessage('client-orders-actions', {
+            action: 'ORDERS_BY_CLIENT',
+            clientId: clientId,
+            orders: orders,
+            message: 'Orders for client'
+        });
+
+        res.status(200).send('Commande du client récupérées et envoyées');
     } catch (error) {
+        console.error('Erreur lors de la récupération des commandes du client:', error);
         res.status(500).send('Erreur lors de la récupération des commandes du client : ' + error.message);
     }
 }
-
 module.exports = router;
