@@ -47,6 +47,37 @@ const deleteOrder = async (id) => {
         .set('x-api-key', ApiKey);
 };
 
+// Fonction utilitaire pour créer une commande
+const createTestOrder = async (clientId) => {
+    const newOrder = {
+        date: '2024-06-08',
+        id_produit: 'prod123',
+        id_client: clientId,
+        quantity: 2,
+    };
+    const response = await createOrder(newOrder);
+    const orderId = response.text.split('Commande créée avec son ID : ')[1];
+    return orderId;
+};
+
+// Fonction utilitaire pour envoyer un message Pub/Sub
+const sendPubSubMessage = async (action, clientId, additionalData = {}) => {
+    const message = {
+        message: {
+            data: Buffer.from(JSON.stringify({
+                action: action,
+                clientId: clientId,
+                ...additionalData
+            })).toString('base64')
+        }
+    };
+
+    return await request(app)
+        .post('/orders/pubsub')
+        .set('x-api-key', ApiKey)
+        .send(message);
+};
+
 describe('Orders API', () => {
     let orderId;
 
@@ -94,115 +125,49 @@ describe('Orders API', () => {
 
 describe('Tests Pub/Sub', () => {
     test('Pub/Sub - DELETE_CLIENT - Succès', async () => {
-        const newOrder = {
-            date: '2024-06-08',
-            id_produit: 'prod123',
-            id_client: 'clientToDelete',
-            quantity: 2,
-        };
-        await createOrder(newOrder);
+        await createTestOrder('clientToDelete');
 
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'DELETE_CLIENT',
-                    clientId: 'clientToDelete'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
+        const response = await sendPubSubMessage('DELETE_CLIENT', 'clientToDelete');
         expect(response.status).toBe(200);
         expect(response.text).toBe('Les commandes du client clientToDelete ont été supprimées');
     });
 
-    test('Pub/Sub - ORDER_CONFIRMATION - Succès ( undefined price)', async () => {
-        const newOrder = {
-            date: '2024-06-08',
-            id_produit: 'prod123',
-            id_client: 'client123',
-            quantity: 2,
-        };
-        const createResponse = await createOrder(newOrder);
-        const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
+    test('Pub/Sub - ORDER_CONFIRMATION - Succès (undefined price)', async () => {
+        const orderId = await createTestOrder('client123');
 
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'ORDER_CONFIRMATION',
-                    orderId: orderId,
-                    price : undefined,
-                    status: 'Confirmée'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
+        const response = await sendPubSubMessage('ORDER_CONFIRMATION', 'client123', { orderId: orderId, price: undefined, status: 'Confirmée' });
         expect(response.status).toBe(200);
         expect(response.text).toBe(`Statut et prix de la commande ${orderId} mis à jour`);
     });
 
-    test('Pub/Sub - ORDER_CONFIRMATION - Succès ( defined price)', async () => {
-        const newOrder = {
-            date: '2024-06-15',
-            id_produit: 'coffee753',
-            id_client: 'client147',
-            quantity: 5,
-        };
-        const createResponse = await createOrder(newOrder);
-        const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
+    test('Pub/Sub - ORDER_CONFIRMATION - Succès (defined price)', async () => {
+        const orderId = await createTestOrder('client147');
 
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'ORDER_CONFIRMATION',
-                    orderId: orderId,
-                    price : 40,
-                    status: 'Confirmée'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
+        const response = await sendPubSubMessage('ORDER_CONFIRMATION', 'client147', { orderId: orderId, price: 40, status: 'Confirmée' });
         expect(response.status).toBe(200);
         expect(response.text).toBe(`Statut et prix de la commande ${orderId} mis à jour`);
     });
 
     test('Pub/Sub - Action Inconnue', async () => {
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'UNKNOWN_ACTION'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
+        const response = await sendPubSubMessage('UNKNOWN_ACTION', 'someClient');
         expect(response.status).toBe(400);
         expect(response.text).toBe('Action non reconnue');
     });
 
-    test('Pub/Sub - Echec ( Format non valide )', async () => {
+    test('Pub/Sub - Echec (Format non valide)', async () => {
         const message = {
             message: {}
         };
 
         const response = await request(app)
             .post('/orders/pubsub')
+            .set('x-api-key', ApiKey)
             .send(message);
         expect(response.status).toBe(400);
         expect(response.text).toBe('Format de message non valide');
     });
 
-    test('Pub/Sub - DELETE_CLIENT - Echec ( Test 500 )', async () => {
+    test('Pub/Sub - DELETE_CLIENT - Echec (Test 500)', async () => {
         const message = {
             message: {
                 data: Buffer.from(JSON.stringify({
@@ -221,46 +186,27 @@ describe('Tests Pub/Sub', () => {
 
         const response = await request(app)
             .post('/orders/pubsub')
+            .set('x-api-key', ApiKey)
             .send(message);
         expect(response.status).toBe(500);
         expect(response.text).toBe('Erreur lors de la suppression des commandes du client nonExistentClient');
     });
 
-    test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Order doesn\'t exist )', async () => {
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'ORDER_CONFIRMATION',
-                    orderId: 'nonExistentOrder',
-                    price : 10,
-                    status: 'Confirmée'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
+    test('Pub/Sub - ORDER_CONFIRMATION - Echec (Order doesn\'t exist)', async () => {
+        const response = await sendPubSubMessage('ORDER_CONFIRMATION', 'nonExistentOrder', { orderId: 'nonExistentOrder', price: 10, status: 'Confirmée' });
         expect(response.status).toBe(404);
         expect(response.text).toBe(`Commande non trouvée pour l'ID nonExistentOrder`);
     });
 
-    test('Pub/Sub - ORDER_CONFIRMATION - Echec ( Test 500 ) ', async () => {
-        const newOrder = {
-            date: '2024-06-08',
-            id_produit: 'coffee578',
-            id_client: 'client869',
-            quantity: 4,
-        };
-        const createResponse = await createOrder(newOrder);
-        const orderId = createResponse.text.split('Commande créée avec son ID : ')[1];
+    test('Pub/Sub - ORDER_CONFIRMATION - Echec (Test 500)', async () => {
+        const orderId = await createTestOrder('client869');
 
         const message = {
             message: {
                 data: Buffer.from(JSON.stringify({
                     action: 'ORDER_CONFIRMATION',
                     orderId: orderId,
-                    price : 25,
+                    price: 25,
                     status: 'Confirmée'
                 })).toString('base64')
             }
@@ -275,58 +221,29 @@ describe('Tests Pub/Sub', () => {
 
         const response = await request(app)
             .post('/orders/pubsub')
+            .set('x-api-key', ApiKey)
             .send(message);
         expect(response.status).toBe(500);
         expect(response.text).toBe(`Erreur lors de la mise à jour de la commande ${orderId}`);
     });
 
     test('Pub/Sub - GET_ORDERS - Succès avec commandes', async () => {
-        const newOrder = {
-            date: '2024-06-08',
-            id_produit: 'prod123',
-            id_client: 'clientWithOrders',
-            quantity: 2,
-        };
-        await createOrder(newOrder);
+        await createTestOrder('clientWithOrders');
 
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'GET_ORDERS',
-                    clientId: 'clientWithOrders'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
-
+        const response = await sendPubSubMessage('GET_ORDERS', 'clientWithOrders');
         expect(response.status).toBe(200);
         expect(response.body).toBeInstanceOf(Array);
         expect(response.body.length).toBeGreaterThan(0);
     });
 
     test('Pub/Sub - GET_ORDERS - Succès sans commandes', async () => {
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'GET_ORDERS',
-                    clientId: 'clientWithoutOrders'
-                })).toString('base64')
-            }
-        };
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .send(message);
-
+        const response = await sendPubSubMessage('GET_ORDERS', 'clientWithoutOrders');
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('message', "Aucune commande n'a été trouvée pour cet utilisateur.");
         expect(response.body.orders).toEqual([]);
     });
 
-    test('Pub/Sub - GET_ORDERS - Echec ( Test 500 )', async () => {
+    test('Pub/Sub - GET_ORDERS - Echec (Test 500)', async () => {
         const message = {
             message: {
                 data: Buffer.from(JSON.stringify({
@@ -345,8 +262,8 @@ describe('Tests Pub/Sub', () => {
 
         const response = await request(app)
             .post('/orders/pubsub')
+            .set('x-api-key', ApiKey)
             .send(message);
-
         expect(response.status).toBe(500);
         expect(response.text).toBe('Erreur lors de la récupération des commandes du client : Test error');
     });
