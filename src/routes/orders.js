@@ -90,7 +90,7 @@ router.delete('/:id', checkApiKey, async (req, res) => {
 });
 
 // Endpoint Pub/Sub
-router.post('/pubsub', checkApiKey,async (req, res) => {
+router.post('/pubsub', async (req, res) => {
     const message = req.body.message;
 
     if (!message || !message.data) {
