@@ -449,7 +449,7 @@ describe('Tests500', () => {
         jest.spyOn(db, 'collection').mockImplementationOnce(() => {
             return {
                 doc: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error'))
+                get: jest.fn().mockRejectedValue(new Error('Test error 2'))
             };
         });
 
@@ -474,7 +474,7 @@ describe('Tests500', () => {
         jest.spyOn(db, 'collection').mockImplementationOnce(() => {
             return {
                 where: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error'))
+                get: jest.fn().mockRejectedValue(new Error('Test error 2'))
             };
         });
 
@@ -483,6 +483,6 @@ describe('Tests500', () => {
             .send(message);
 
         expect(response.status).toBe(500);
-        expect(response.text).toBe('Erreur lors de la récupération des commandes du client : Test error');
+        expect(response.text).toBe('Erreur lors de la récupération des commandes du client : Test error 2');
     });
 });
