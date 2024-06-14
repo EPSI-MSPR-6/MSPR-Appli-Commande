@@ -78,6 +78,31 @@ const sendPubSubMessage = async (action, clientId, additionalData = {}) => {
         .send(message);
 };
 
+// Fonction utilitaire pour envoyer un message Pub/Sub avec erreur simulée
+const sendPubSubMessageWithError = async (action, clientId, errorMessage, additionalData = {}) => {
+    const message = {
+        message: {
+            data: Buffer.from(JSON.stringify({
+                action: action,
+                clientId: clientId,
+                ...additionalData
+            })).toString('base64')
+        }
+    };
+
+    jest.spyOn(db, 'collection').mockImplementationOnce(() => {
+        return {
+            where: jest.fn().mockReturnThis(),
+            get: jest.fn().mockRejectedValue(new Error(errorMessage))
+        };
+    });
+
+    return await request(app)
+        .post('/orders/pubsub')
+        .set('x-api-key', ApiKey)
+        .send(message);
+};
+
 describe('Orders API', () => {
     let orderId;
 
@@ -168,26 +193,7 @@ describe('Tests Pub/Sub', () => {
     });
 
     test('Pub/Sub - DELETE_CLIENT - Echec (Test 500)', async () => {
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'DELETE_CLIENT',
-                    clientId: 'nonExistentClient'
-                })).toString('base64')
-            }
-        };
-
-        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
-            return {
-                where: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error'))
-            };
-        });
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .set('x-api-key', ApiKey)
-            .send(message);
+        const response = await sendPubSubMessageWithError('DELETE_CLIENT', 'nonExistentClient', 'Test error');
         expect(response.status).toBe(500);
         expect(response.text).toBe('Erreur lors de la suppression des commandes du client nonExistentClient');
     });
@@ -201,28 +207,7 @@ describe('Tests Pub/Sub', () => {
     test('Pub/Sub - ORDER_CONFIRMATION - Echec (Test 500)', async () => {
         const orderId = await createTestOrder('client869');
 
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'ORDER_CONFIRMATION',
-                    orderId: orderId,
-                    price: 25,
-                    status: 'Confirmée'
-                })).toString('base64')
-            }
-        };
-
-        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
-            return {
-                doc: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error'))
-            };
-        });
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .set('x-api-key', ApiKey)
-            .send(message);
+        const response = await sendPubSubMessageWithError('ORDER_CONFIRMATION', 'client869', 'Test error', { orderId: orderId, price: 25, status: 'Confirmée' });
         expect(response.status).toBe(500);
         expect(response.text).toBe(`Erreur lors de la mise à jour de la commande ${orderId}`);
     });
@@ -244,26 +229,7 @@ describe('Tests Pub/Sub', () => {
     });
 
     test('Pub/Sub - GET_ORDERS - Echec (Test 500)', async () => {
-        const message = {
-            message: {
-                data: Buffer.from(JSON.stringify({
-                    action: 'GET_ORDERS',
-                    clientId: 'clientWithError'
-                })).toString('base64')
-            }
-        };
-
-        jest.spyOn(db, 'collection').mockImplementationOnce(() => {
-            return {
-                where: jest.fn().mockReturnThis(),
-                get: jest.fn().mockRejectedValue(new Error('Test error'))
-            };
-        });
-
-        const response = await request(app)
-            .post('/orders/pubsub')
-            .set('x-api-key', ApiKey)
-            .send(message);
+        const response = await sendPubSubMessageWithError('GET_ORDERS', 'clientWithError', 'Test error');
         expect(response.status).toBe(500);
         expect(response.text).toBe('Erreur lors de la récupération des commandes du client : Test error');
     });
